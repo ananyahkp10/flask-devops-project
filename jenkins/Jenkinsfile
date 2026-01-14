@@ -2,51 +2,62 @@ pipeline {
     agent any
 
     environment {
-	IMAGE_NAME = "ananyahkp/flask-devops-app"
-	IMAGE_TAG = "latest"
-	DOCKER_CREDS = credentials('dockerhub-cred')
+        IMAGE_NAME   = "ananyahkp10/flask-devops-app"
+        IMAGE_TAG    = "latest"
+        DOCKER_CREDS = credentials('dockerhub-creds')
     }
 
     stages {
-	
-	stage('Checkout code') {
-	    steps {
-		git 'https://github.com/ananyahkp10/flask-devops-project.git'
-	    }
-	}
 
-	stage('Build Docker Image') {
-	    steps {
-		sh 'docker build -t $IMAGE_NAME:$IMAGE_TAG .'
-	    }
-	}
+        stage('Checkout Code') {
+            steps {
+                checkout scm
+            }
+        }
 
-	stage('Run Unit Test') {
-	    steps {
-		sh '''
-		echo $DOCKER_CRED_PSW | docker login -u $DOCKER_CREDS_USR --password-stdin
-		docker push $IMAGE_NAME:$IMAGE_TAG
-		'''
-	    }
-	}
+        stage('Build Docker Image') {
+            steps {
+                sh '''
+                  docker build -t $IMAGE_NAME:$IMAGE_TAG -f docker/Dockerfile .
+                '''
+            }
+        }
 
-	stage('Deploy Locally') {
-	    steps {
-		sh '''
-		docker stop flaskapp || true 
-		docker rm flaskapp || true
-		docker run -d --restart=always -p 80:80 --name flaskapp $IMAGE_NAME:$IMAGE_TAG
-		'''
-	    }
-	}
+        stage('Run Unit Tests') {
+            steps {
+                sh '''
+                  docker run --rm $IMAGE_NAME:$IMAGE_TAG python -m pytest test_app.py
+                '''
+            }
+        }
+
+        stage('Login & Push Image') {
+            steps {
+                sh '''
+                  echo "$DOCKER_CREDS_PSW" | docker login -u "$DOCKER_CREDS_USR" --password-stdin
+                  docker push $IMAGE_NAME:$IMAGE_TAG
+                '''
+            }
+        }
+
+        stage('Deploy Locally') {
+            steps {
+                sh '''
+                  docker stop flaskapp || true
+                  docker rm flaskapp || true
+                  docker run -d --restart=always -p 80:80 --name flaskapp $IMAGE_NAME:$IMAGE_TAG
+                '''
+            }
+        }
     }
 
     post {
-	success {
-	    echo "Pipeline completed successfully!"
-	}
-	failure {
-	    echo "Pipeline failed!"
-	}
+        success {
+            echo "✅ Pipeline completed successfully!"
+        }
+        failure {
+            echo "❌ Pipeline failed!"
+        }
     }
 }
+
