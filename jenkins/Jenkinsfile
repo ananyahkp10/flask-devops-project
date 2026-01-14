@@ -3,7 +3,7 @@ pipeline {
 
     environment {
 	IMAGE_NAME = "ananyahkp/flask-devops-app"
-	IMAGE-TAG = "latest"
+	IMAGE_TAG = "latest"
 	DOCKER_CREDS = credentials('dockerhub-cred')
     }
 
@@ -43,7 +43,7 @@ pipeline {
 
     post {
 	success {
-	    echo "pipeline completed successfully!"
+	    echo "Pipeline completed successfully!"
 	}
 	failure {
 	    echo "Pipeline failed!"
